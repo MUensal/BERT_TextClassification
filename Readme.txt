@@ -23,3 +23,7 @@ The BERT Modell is implemented in
 ‘Prepared_data’ file, 
 
 where it finally does output the classification results. 
+
+__________________________________________
+
+DEPENDENCIES

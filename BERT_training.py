@@ -1,8 +1,6 @@
 import sys
 import time
 
-import torch as torch
-from sklearn import metrics
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from transformers import BertTokenizer, BertConfig, BertForSequenceClassification
@@ -12,6 +10,8 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from transformers import AdamW, get_linear_schedule_with_warmup
 from tqdm import tqdm
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 print('Python version     : ' + str(sys.version))
@@ -85,7 +85,7 @@ for row in X_test:
 att_mask_test = [[float(id > 0) for id in seq] for seq in X_test_tokens]
 
 # CURRENT DATA TYPES
-print(att_mask_train[0])
+#print(att_mask_train[0])
 print(type(X_train_tokens))
 print(type(att_mask_train))
 print(type(Y_train))
@@ -135,7 +135,7 @@ print('-----------------------')
 
 # split observations into batches, train for 2 epochs
 batch_size = 64
-num_train_epochs = 2
+num_train_epochs = 1
 
 train_sampler = RandomSampler(training_data)
 
@@ -152,15 +152,15 @@ t_total = len(train_dataloader) // num_train_epochs
 # print(num_training_steps)
 
 # Learning variables
-print(len(training_data))
-print(num_train_epochs)
-print(batch_size)
-print(t_total)
+#print(len(training_data))
+#print(num_train_epochs)
+#print(batch_size)
+#print(t_total)
 
 # set learning parameters
 learning_rate = 5e-5
 adam_epsilon = 1e-8
-warmup_steps = 0
+warmup_steps = 100
 
 # for parameter adjustment
 optimizer = AdamW(model.parameters(), lr=learning_rate, eps=adam_epsilon)
@@ -260,10 +260,12 @@ for batch in tqdm(test_dataloader, desc="Evaluating"):
                   'attention_mask': batch[1],
                   'labels': batch[2]}
 
+
+        # ** -> converts method parameter from dictionary to keyword arguments bsp: model(input_ids=batch[0], attention_mask= batch[0], usw)
         outputs = model(**inputs)
 
         # get loss
-        tmp_eval_loss, logits = outputs[:2]
+        _tmp_eval_loss, logits = outputs[:2]
 
         # batch items check
         if preds is None:
@@ -275,23 +277,42 @@ for batch in tqdm(test_dataloader, desc="Evaluating"):
                                       inputs['labels'].detach().cpu().numpy(),
                                       axis=0)
 
-# Get prediction and accuracy
-preds = np.argmax(preds, axis=1)
+print("--------------------------------------------------")
+
+#print(preds.argmax(axis=1)) #[ 0.52554715 -0.07667161], [0.19761527  0.06251662]
+#print(type(preds)) # <class 'numpy.ndarray'>
+
+#print(out_label_ids)# [0 1 0 1 0 0 0 0 0 1 0
+#print(type(out_label_ids)) #<class 'numpy.ndarray'>
+
+#print(preds.shape)
+#print(out_label_ids.shape)
+
+# argmax returns index of max value of the two values in each array
+preds = preds.argmax(axis=1)
+
+# preds is now 1-dim
+#print(preds.shape)
+
 acc_score = accuracy_score(preds, out_label_ids)
 print('\nAccuracy Score on Test data ', acc_score)
 
-print("accuracy andere methode: ")
-acc = metrics.accuracy_score(test_labels_y, preds)
+#print("accuracy andere methode: ")
+#acc = metrics.accuracy_score(test_labels_y, preds)
 
-f1_score = metrics.f1_score(test_labels_y, preds)
-recall = metrics.recall_score(test_labels_y, preds)
-precision = metrics.precision_score(test_labels_y, preds)
-print(acc, f1_score, recall, precision)
-print('vs')
-print(classification_report(test_labels_y, preds))
+# Get prediction and accuracy
+preds = preds
+actual =out_label_ids
 
-preds = np.argmax(preds)
-actual = np.where(test_labels_y >= 0.5, 1, 0)
+print("------------ output metrics calculation...---------")
+#f1_score = metrics.f1_score(test_labels_y, preds)
+#recall = metrics.recall_score(test_labels_y, preds)
+#precision = metrics.precision_score(test_labels_y, preds)
+#print(acc_score, f1_score, recall, precision)
+
+
+print(classification_report(out_label_ids, preds))
+
 
 # True pos = (1,1), True neg = (0,0), False pos = (1,0), False neg = (0,1)
 TP = np.count_nonzero(preds * actual)
@@ -304,15 +325,18 @@ print("True Negatives", TN)
 print("False Positives", FP)
 print("False Negatives", FN)
 
+# function for confusion matrix
+def plot_cm(labels, predictions, p=0.5):
+    cm = confusion_matrix(labels, predictions > p)
+    plt.figure(figsize=(5, 5))
+    sns.heatmap(cm, annot=True, fmt="d")
+    plt.title('Confusion matrix @{:.2f}'.format(p))
+    plt.ylabel('Actual label')
+    plt.xlabel('Predicted label')
+    plt.show()
 
+# plot confusionmatrix
+plot_cm(actual, preds)
 
-
-
-
-
-
-
-
-
-
-
+print(type(X_train))
+print(X_train[:3])
