@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-
 print('Python version     : ' + str(sys.version))
 print('Torch version   : ' + str(torch.__version__))
 
@@ -47,7 +46,7 @@ df['labels'] = df['labels'].replace(['HOF', 'NOT'], [1, 0])
 X_train, X_test, Y_train, Y_test = train_test_split(df['text'],
                                                     df['labels'],
                                                     test_size=0.2,
-                                                    random_state=42,
+                                                    random_state=42,  # Zufallszahl wird aus der 42 generiert.
                                                     stratify=df['labels']
                                                     )
 
@@ -85,7 +84,7 @@ for row in X_test:
 att_mask_test = [[float(id > 0) for id in seq] for seq in X_test_tokens]
 
 # CURRENT DATA TYPES
-#print(att_mask_train[0])
+# print(att_mask_train[0])
 print(type(X_train_tokens))
 print(type(att_mask_train))
 print(type(Y_train))
@@ -113,7 +112,6 @@ print(len(test_labels_y))
 print(len(training_labels_y))
 print(type(X_train))
 
-
 # shapes of this tensors
 print('\n------------------------')
 print(training_data_x.shape)
@@ -135,7 +133,7 @@ print('-----------------------')
 
 # split observations into batches, train for 2 epochs
 batch_size = 64
-num_train_epochs = 1
+num_train_epochs = 40
 
 train_sampler = RandomSampler(training_data)
 
@@ -152,18 +150,17 @@ t_total = len(train_dataloader) // num_train_epochs
 # print(num_training_steps)
 
 # Learning variables
-#print(len(training_data))
-#print(num_train_epochs)
-#print(batch_size)
-#print(t_total)
+# print(len(training_data))
+# print(num_train_epochs)
+# print(batch_size)
+# print(t_total)
 
 # set learning parameters
 learning_rate = 5e-5
-adam_epsilon = 1e-8
 warmup_steps = 100
 
 # for parameter adjustment
-optimizer = AdamW(model.parameters(), lr=learning_rate, eps=adam_epsilon)
+optimizer = AdamW(model.parameters(), lr=learning_rate)
 
 #  define a learning rate scheduler
 scheduler = get_linear_schedule_with_warmup(optimizer,
@@ -173,7 +170,6 @@ scheduler = get_linear_schedule_with_warmup(optimizer,
 # if available, the gpu will be used
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-
 
 # output is too long
 # print(model)
@@ -210,7 +206,7 @@ for epoch in range(num_train_epochs):
         loss = outputs.loss
         print("\r%f" % loss, end='')
 
-        # Backpropagation
+        # Backpropagation for parameter adjustment
         loss.backward()
 
         # limit gradients to 1.0 to prevent exploding gradients -->  is deprecated
@@ -260,7 +256,6 @@ for batch in tqdm(test_dataloader, desc="Evaluating"):
                   'attention_mask': batch[1],
                   'labels': batch[2]}
 
-
         # ** -> converts method parameter from dictionary to keyword arguments bsp: model(input_ids=batch[0], attention_mask= batch[0], usw)
         outputs = model(**inputs)
 
@@ -279,40 +274,38 @@ for batch in tqdm(test_dataloader, desc="Evaluating"):
 
 print("--------------------------------------------------")
 
-#print(preds.argmax(axis=1)) #[ 0.52554715 -0.07667161], [0.19761527  0.06251662]
-#print(type(preds)) # <class 'numpy.ndarray'>
+# print(preds.argmax(axis=1)) #[ 0.52554715 -0.07667161], [0.19761527  0.06251662]
+# print(type(preds)) # <class 'numpy.ndarray'>
 
-#print(out_label_ids)# [0 1 0 1 0 0 0 0 0 1 0
-#print(type(out_label_ids)) #<class 'numpy.ndarray'>
+# print(out_label_ids)# [0 1 0 1 0 0 0 0 0 1 0
+# print(type(out_label_ids)) #<class 'numpy.ndarray'>
 
-#print(preds.shape)
-#print(out_label_ids.shape)
+# print(preds.shape)
+# print(out_label_ids.shape)
 
 # argmax returns index of max value of the two values in each array
 preds = preds.argmax(axis=1)
 
 # preds is now 1-dim
-#print(preds.shape)
+# print(preds.shape)
 
 acc_score = accuracy_score(preds, out_label_ids)
 print('\nAccuracy Score on Test data ', acc_score)
 
-#print("accuracy andere methode: ")
-#acc = metrics.accuracy_score(test_labels_y, preds)
+# print("accuracy andere methode: ")
+# acc = metrics.accuracy_score(test_labels_y, preds)
 
 # Get prediction and accuracy
 preds = preds
-actual =out_label_ids
+actual = out_label_ids
 
-print("------------ output metrics calculation...---------")
-#f1_score = metrics.f1_score(test_labels_y, preds)
-#recall = metrics.recall_score(test_labels_y, preds)
-#precision = metrics.precision_score(test_labels_y, preds)
-#print(acc_score, f1_score, recall, precision)
-
+print("------------ \noutput metrics calculation...---------")
+# f1_score = metrics.f1_score(test_labels_y, preds)
+# recall = metrics.recall_score(test_labels_y, preds)
+# precision = metrics.precision_score(test_labels_y, preds)
+# print(acc_score, f1_score, recall, precision)
 
 print(classification_report(out_label_ids, preds))
-
 
 # True pos = (1,1), True neg = (0,0), False pos = (1,0), False neg = (0,1)
 TP = np.count_nonzero(preds * actual)
@@ -320,10 +313,12 @@ TN = np.count_nonzero((preds - 1) * (actual - 1))
 FP = np.count_nonzero(preds * (actual - 1))
 FN = np.count_nonzero((preds - 1) * actual)
 
+print()
 print("True Positives", TP)
 print("True Negatives", TN)
 print("False Positives", FP)
 print("False Negatives", FN)
+
 
 # function for confusion matrix
 def plot_cm(labels, predictions, p=0.5):
@@ -335,8 +330,46 @@ def plot_cm(labels, predictions, p=0.5):
     plt.xlabel('Predicted label')
     plt.show()
 
-# plot confusionmatrix
+
+# plot confusion matrix
 plot_cm(actual, preds)
 
-print(type(X_train))
-print(X_train[:3])
+# print(list(X_test))
+
+#----------TESTING---------------------------
+print("\n-------- \nClassification examples ----------------")
+
+with open('X_test.txt', 'w', encoding="ISO-8859-1") as f:
+    for line in X_test:
+        print(line, file=f)
+
+
+file = open("X_test.txt")
+lines_to_print = [56, 97, 99]
+
+
+# classification function
+def classify_comment(comment):
+    print(comment)
+    if comment > 0.5:
+        print("-> Hate-speech\n")
+    else:
+        print("-> Non-Hate-speech\n")
+
+#read samples from test_data for classification
+for index, line in enumerate(file):
+  if (index in lines_to_print):
+    print(line)
+    # pass index of chosen comment
+    pred_comment1 = preds[index]
+    classify_comment(pred_comment1)
+
+
+
+
+
+
+
+
+
+

@@ -27,3 +27,29 @@ where it finally does output the classification results.
 __________________________________________
 
 DEPENDENCIES
+
+- transformers 
+- sklearn
+- torch
+- pandas
+- tqdm
+- matplotlib 
+- seaborn
+
+keras                   2.6.0
+matplotlib              3.4.2
+nltk                    3.6.2
+numpy                   1.19.5
+pandas                  1.2.4
+pip                     21.1.1
+regex                   2021.4.4
+sacremoses              0.0.45
+scikit-learn            0.24.2
+seaborn                 0.11.1
+sklearn                 0.0
+tokenizers              0.10.2
+torch                   1.8.0
+tqdm                    4.60.0
+transformers            4.6.0
+
+
